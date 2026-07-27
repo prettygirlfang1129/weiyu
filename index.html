@@ -115,7 +115,66 @@
       .report-preview-wrap{padding:8px;overflow:auto}
       .official-report,.payslip,.excel-payslip,.sales-report,.inventory-report{transform-origin:top left}
     }
-  </style>
+  
+
+    /* ===== 手機版版面修正版：僅調整顯示，不改動功能與資料邏輯 ===== */
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+    body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+    .app,.main,.content,.page{min-width:0;max-width:100%}
+    .table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    img,svg,canvas,video{max-width:100%;height:auto}
+
+    @media(max-width:900px){
+      .app{grid-template-columns:1fr!important;width:100%!important;max-width:100vw!important}
+      .main{width:100%!important;min-width:0!important;max-width:100vw!important;overflow-x:hidden!important}
+      .sidebar{display:block;position:fixed;left:0;top:0;bottom:0;width:min(82vw,300px);height:100dvh;z-index:30;transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto;padding-bottom:100px}
+      body.sidebar-open .sidebar{transform:translateX(0)}
+      body.sidebar-open .sidebar-overlay{display:block}
+      body.sidebar-open{overflow:hidden}
+      .mobile-menu-btn{display:inline-flex;flex:0 0 auto}
+      .topbar{height:64px;width:100%;padding:0 12px;gap:10px}
+      .topbar>div:first-child{min-width:0;flex:1}
+      .topbar h2{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .top-actions{gap:6px;flex:0 0 auto}
+      .sync-status{display:none}
+      .content{width:100%!important;max-width:100vw!important;padding:12px!important;overflow-x:hidden!important}
+      .page,.card,.section-card,.full-card{width:100%!important;max-width:100%!important;min-width:0!important}
+
+      /* 總覽：所有統計卡改為滿版單欄，修正右側大片空白 */
+      #dashboard .welcome{width:100%!important;margin-bottom:12px;padding:16px}
+      #dashboard .welcome-row{align-items:flex-start;flex-direction:column;gap:8px}
+      #dashboard .module-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px;margin:12px 0}
+      #dashboard .module-card{width:100%!important;min-width:0;padding:14px}
+      #dashboard .module-card span{display:block;line-height:1.5;overflow-wrap:anywhere}
+      #dashboard .kpis{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;gap:10px!important}
+      #dashboard .kpi{width:100%!important;max-width:none!important;min-width:0!important;padding:16px}
+      #dashboard .kpi-value{font-size:26px;overflow-wrap:anywhere}
+      #dashboard .grid-2{grid-template-columns:minmax(0,1fr)!important;width:100%!important;gap:12px;margin-top:12px}
+      #dashboard .section-card{width:100%!important;min-width:0!important;padding:16px}
+
+      .kpis,.vehicle-stats,.cost-summary-grid,.sales-kpis,.inventory-kpis,.accounting-summary,.payroll-kpis,.employee-kpis{grid-template-columns:minmax(0,1fr)!important}
+      .form-grid,.detail-grid,.sales-auto-box,.payroll-calc-box,.accounting-breakdown{grid-template-columns:minmax(0,1fr)!important}
+      .span-2,.span-3{grid-column:auto!important}
+      .toolbar,.cost-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%;gap:8px}
+      .toolbar>*,.cost-toolbar>*{width:100%!important;min-width:0!important;max-width:100%!important}
+      .toolbar .spacer,.cost-toolbar .spacer{display:none}
+      .table-wrap{overflow-x:auto!important;overflow-y:hidden!important;border-radius:10px}
+      .table-wrap table{width:max-content!important;min-width:720px!important;max-width:none!important}
+      .modal{padding:0!important;align-items:flex-end!important;overflow:hidden}
+      .modal-box{width:100%!important;max-width:100vw!important;max-height:94dvh!important;border-radius:18px 18px 0 0!important}
+      .modal-head,.modal-body,.modal-actions{padding-left:14px!important;padding-right:14px!important}
+      .modal-actions{position:sticky;bottom:0;background:#fff;z-index:2;flex-wrap:wrap}
+      .modal-actions .btn{flex:1;min-width:0}
+      .report-preview-wrap{padding:8px!important;overflow:auto!important}
+    }
+
+    @media(max-width:480px){
+      #dashboard .module-grid{grid-template-columns:minmax(0,1fr)!important}
+      .content{padding:10px!important}
+      .section-head{align-items:flex-start;gap:10px}
+      .section-head>.btn{flex:0 0 auto}
+    }
+</style>
 </head>
 <body>
 

@@ -540,14 +540,29 @@
     function showPage(id){closeMobileMenu();const target=document.getElementById(id);if(!target)return;document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));target.classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===id));document.getElementById('pageTitle').textContent=PAGE_TITLES[id];if(id==='dashboard')renderDashboard();if(id==='costs')renderCostManagement();if(id==='inventory')renderInventoryRecords();if(id==='sales')renderSales();if(id==='accounting')renderAccounting();if(id==='employees')renderEmployees();if(id==='payroll')renderPayroll()}
     document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>showPage(btn.dataset.page)));
 
+    function hydrateRuntimeFromStorage(){
+      try{brandModels=JSON.parse(localStorage.getItem('vehicleBrandModels')||'null')||JSON.parse(JSON.stringify(defaultBrandModels))}catch(_e){brandModels=JSON.parse(JSON.stringify(defaultBrandModels))}
+      try{vehicles=(JSON.parse(localStorage.getItem('vehicles')||'[]')||[]).map((v,i)=>normalizeVehicle(v,i))}catch(_e){vehicles=[]}
+      try{costCategories=JSON.parse(localStorage.getItem('vehicleCostCategories')||'null')||[...defaultCostCategories]}catch(_e){costCategories=[...defaultCostCategories]}
+      try{employees=JSON.parse(localStorage.getItem('weiyuEmployeesV1')||'[]')||[]}catch(_e){employees=[]}
+      try{loginUsers=JSON.parse(localStorage.getItem('erpLoginUsersV1')||'[]')||[]}catch(_e){loginUsers=[]}
+      try{payrollRecords=JSON.parse(localStorage.getItem('weiyuPayrollV1')||'[]')||[]}catch(_e){payrollRecords=[]}
+      try{salesRecords=JSON.parse(localStorage.getItem('weiyuSalesV1')||'[]')||[]}catch(_e){salesRecords=[]}
+      try{inventoryRecords=JSON.parse(localStorage.getItem('weiyuInventoryTradesV2')||'[]')||[]}catch(_e){inventoryRecords=[]}
+      try{miscExpenses=JSON.parse(localStorage.getItem('weiyuMiscExpensesV1')||'[]')||[]}catch(_e){miscExpenses=[]}
+    }
+    function renderAllCloudData(){
+      initBrandOptions();renderCostCategoryOptions();renderVehicles();renderCostManagement();renderEmployees();renderPayroll();renderSales();renderInventoryRecords();renderAccounting();renderDashboard();
+    }
     async function initializeApp(){
       document.getElementById('app')?.classList.remove('hidden');
       const badge=document.getElementById('modeBadge');
       if(badge){badge.textContent='● Supabase 雲端版';badge.style.background='#e7f8ee';badge.style.color='#1a7a4e'}
       if(!isSupabaseConfigured()){setSyncStatus('尚未設定 Supabase','error');return}
       try{
-        const needsReload=await pullSupabaseState();
-        if(needsReload){location.reload();return}
+        await pullSupabaseState();
+        hydrateRuntimeFromStorage();
+        renderAllCloudData();
         cloudReady=true;
         setSyncStatus('已連接 Supabase','ok');
       }catch(error){
@@ -1031,7 +1046,8 @@
     updateCurrentRocDate();
     const companyObserver=new MutationObserver(mutations=>{if(mutations.some(m=>m.addedNodes.length))replaceCompanyText()});
     companyObserver.observe(document.body,{childList:true,subtree:true});
-    if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(console.error))}
+    // 移除舊版 PWA 快取，避免 Vercel 更新後仍載入舊 HTML／舊 JavaScript。
+    if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));if('caches' in window){const names=await caches.keys();await Promise.all(names.map(n=>caches.delete(n)))}}catch(error){console.warn('清除舊快取失敗',error)}})}
     initializeApp();
   </script>
 </body>

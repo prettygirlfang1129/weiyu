@@ -914,7 +914,8 @@
     function isLoginUserAllowed(email){if(!loginUsers.length)return true;return loginUsers.some(u=>u.status==='啟用'&&u.email===String(email||'').toLowerCase())}
     function saveConfig(){saveErpCompanyName()}
     window.addEventListener('resize',()=>{if(window.innerWidth>760)closeMobileMenu()});
-    window.addEventListener('click',e=>{if(e.target===document.getElementById('vehicleModal'))closeVehicleModal();if(e.target===document.getElementById('vehicleDetailModal'))closeVehicleDetail();if(e.target===document.getElementById('brandManagerModal'))closeBrandManager();if(e.target===document.getElementById('reportModal'))closeReportModal();if(e.target===document.getElementById('costModal'))closeCostModal();if(e.target===document.getElementById('costCategoryModal'))closeCostCategoryManager();if(e.target===document.getElementById('costReportModal'))closeCostReportModal();if(e.target===document.getElementById('employeeModal'))closeEmployeeModal();if(e.target===document.getElementById('employeeViewModal'))closeEmployeeViewModal();if(e.target===document.getElementById('salesModal'))closeSalesModal();if(e.target===document.getElementById('salesReportModal'))closeSalesReportModal();if(e.target===document.getElementById('payrollModal'))closePayrollModal();if(e.target===document.getElementById('payslipModal'))closePayslipModal();if(e.target===document.getElementById('inventoryModal'))closeInventoryModal();if(e.target===document.getElementById('inventoryReportModal'))closeInventoryReportModal();if(e.target===document.getElementById('miscExpenseModal'))closeMiscExpenseModal();if(e.target===document.getElementById('accountingReportModal'))closeAccountingReportModal();if(e.target===document.getElementById('loginUserModal'))closeLoginUserModal()});
+    // 防止誤觸：點擊彈出視窗外的半透明背景時，不再自動關閉任何視窗。
+    // 視窗僅能透過「關閉／取消／儲存」按鈕離開。
 
     const PAYROLL_STORAGE_KEY='weiyuPayrollV1';
 
@@ -1127,6 +1128,87 @@
       const wsDetail=XLSX.utils.aoa_to_sheet([[`${d.month} 會計明細`],[],headers,...rows]);wsDetail['!cols']=[{wch:13},{wch:18},{wch:10},{wch:18},{wch:16},{wch:36},{wch:15},{wch:15},{wch:14},{wch:36}];
       XLSX.utils.book_append_sheet(wb,wsSummary,'會計總覽');XLSX.utils.book_append_sheet(wb,wsDetail,'會計明細');XLSX.writeFile(wb,`會計總覽_${d.month}.xlsx`);
     }
+
+
+    // ===== 防誤關與未儲存提醒：不變更原有資料及功能邏輯 =====
+    const EDITABLE_MODAL_IDS=[
+      'loginUserModal','vehicleModal','costModal','employeeModal','salesModal',
+      'payrollModal','inventoryModal','miscExpenseModal'
+    ];
+    let allowModalCloseOnce=false;
+
+    function isEditableModal(modal){return !!modal&&EDITABLE_MODAL_IDS.includes(modal.id)}
+    function markModalClean(modal){if(modal)modal.dataset.unsaved='0'}
+    function markModalDirty(modal){if(modal&&modal.classList.contains('open'))modal.dataset.unsaved='1'}
+    function hasUnsavedModalData(modal){return isEditableModal(modal)&&modal.dataset.unsaved==='1'}
+    function confirmDiscardModal(modal){
+      if(!hasUnsavedModalData(modal)||allowModalCloseOnce)return true;
+      return window.confirm('資料尚未儲存，確定要離開嗎？\n離開後本次輸入內容將不會保留。');
+    }
+
+    // 開啟輸入視窗時先建立乾淨狀態；使用者修改欄位後才標記為未儲存。
+    const editableModalObserver=new MutationObserver(mutations=>{
+      mutations.forEach(m=>{
+        const modal=m.target;
+        if(isEditableModal(modal)&&modal.classList.contains('open')){
+          markModalClean(modal);
+          requestAnimationFrame(()=>markModalClean(modal));
+        }
+      });
+    });
+    EDITABLE_MODAL_IDS.forEach(id=>{
+      const modal=document.getElementById(id);
+      if(!modal)return;
+      editableModalObserver.observe(modal,{attributes:true,attributeFilter:['class']});
+      modal.addEventListener('input',()=>markModalDirty(modal),true);
+      modal.addEventListener('change',()=>markModalDirty(modal),true);
+    });
+
+    // 儲存或刪除按鈕完成原本流程時，不再跳出放棄資料提醒。
+    document.addEventListener('click',event=>{
+      const button=event.target.closest('button');
+      if(!button)return;
+      const modal=button.closest('.modal');
+      if(!isEditableModal(modal))return;
+      const label=(button.textContent||'').trim();
+      if(label.includes('儲存')||label.includes('刪除'))markModalClean(modal);
+    },true);
+
+    // 包裝原有關閉函式：按關閉或取消時，如有修改則先詢問。
+    const guardedModalClosers={
+      closeLoginUserModal:'loginUserModal',
+      closeVehicleModal:'vehicleModal',
+      closeCostModal:'costModal',
+      closeEmployeeModal:'employeeModal',
+      closeSalesModal:'salesModal',
+      closePayrollModal:'payrollModal',
+      closeInventoryModal:'inventoryModal',
+      closeMiscExpenseModal:'miscExpenseModal'
+    };
+    Object.entries(guardedModalClosers).forEach(([fnName,modalId])=>{
+      const original=window[fnName];
+      if(typeof original!=='function')return;
+      window[fnName]=function(...args){
+        const modal=document.getElementById(modalId);
+        if(!confirmDiscardModal(modal))return false;
+        markModalClean(modal);
+        return original.apply(this,args);
+      };
+    });
+
+    // 禁止 ESC 直接關閉；頁面重新整理或關閉分頁時也提醒未儲存資料。
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&document.querySelector('.modal.open')){
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },true);
+    window.addEventListener('beforeunload',event=>{
+      const dirty=EDITABLE_MODAL_IDS.some(id=>hasUnsavedModalData(document.getElementById(id)));
+      if(!dirty)return;
+      event.preventDefault();
+      event.returnValue='';
+    });
 
     initBrandOptions();
     renderCostCategoryOptions();
